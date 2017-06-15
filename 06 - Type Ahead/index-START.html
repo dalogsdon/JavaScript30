@@ -16,6 +16,62 @@
   </form>
 <script>
 const endpoint = 'https://gist.githubusercontent.com/Miserlou/c5cd8364bf9b2420bb29/raw/2bf258763cdddd704f8ffd3ea9a3e81d25e2c6f6/cities.json';
+const cities = [];
+const suggestions = document.querySelector('.suggestions');
+
+fetch(endpoint)
+    .then(res => res.json())
+    .then(data => cities.push(...data));
+
+function findMatches(textToMatch, cities) {
+    return cities.filter(c => {
+        const re = new RegExp(textToMatch, 'gi');
+        return c.city.match(re) || c.state.match(re);
+    });
+}
+
+function debounce(fn, timeout) {
+    let previous;
+    return function() {
+        window.clearTimeout(previous);
+        previous = window.setTimeout(fn.bind(this), timeout);
+    }
+}
+
+function empty(node) {
+    while (node.firstChild) {
+      node.removeChild(node.firstChild);
+    }
+}
+
+function numberWithCommas(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function updateSuggestions() {
+    const matches = this.value === '' ? [] : findMatches(this.value, cities);
+    empty(suggestions);
+    matches.forEach(m => {
+        const nameText = `${m.city}, ${m.state}`;
+        const re = new RegExp(this.value, 'gi');
+        const nameTextFormatted = nameText.replace(re,
+            `<span class="hl">${this.value}</span>`);
+
+        const li = document.createElement('li');
+        const name = document.createElement('span');
+        name.classList.add('name');
+        name.innerHTML = nameTextFormatted;
+        const pop = document.createElement('span');
+        pop.classList.add('population');
+        pop.textContent = numberWithCommas(m.population);
+        li.appendChild(name);
+        li.appendChild(pop);
+        suggestions.appendChild(li);
+    });
+}
+
+document.querySelector('.search-form input')
+    .addEventListener('input', debounce(updateSuggestions, 250));
 
 </script>
   </body>
